@@ -7,8 +7,11 @@ public class Inprogram extends JPanel implements Runnable {
     // จำนวนอุกกาบาต
     private int count;
 
-    // เก็บรูปและตำแหน่ง/ความเร็วของอุกกาบาต
-    private Image[] meteor;
+    // เก็บรูปอุกกาบาตที่ "ใช้งานอยู่" ของแต่ละลูก และสไปรต์ทั้งหมด
+    private Image[] meteor;           // รูปของแต่ละลูก (เลือกจาก meteorSprites)
+    private Image[] meteorSprites;    // คลังรูปหลายไฟล์
+
+    // ตำแหน่ง/ความเร็ว และสถานะระเบิด
     private int[] meteorX, meteorY;
     private float[] speedX, speedY;
     private boolean[] exploding;   // true = กำลังระเบิด
@@ -25,9 +28,10 @@ public class Inprogram extends JPanel implements Runnable {
 
     /* -------------------- Constructor -------------------- */
     public Inprogram() {
-        // ขนาด panel = ตามค่าที่ตั้งใน Vitality
         setPreferredSize(new Dimension(Vitality.window_Width, Vitality.window_Height));
         setDoubleBuffered(true); // ป้องกันภาพกระพริบ
+        setBackgroundImage();
+        loadMeteorSprites();     // โหลดหลายรูปครั้งเดียว
         new Thread(this, "MeteorLoop").start(); // สตาร์ทเธรดเกมลูป
     }
 
@@ -37,11 +41,29 @@ public class Inprogram extends JPanel implements Runnable {
         updateMeteorCount();
     }
 
-    // โหลดรูปพื้นหลัง (แก้ path ให้ตรงกับโปรเจกต์ของคุณ)
+    // โหลดรูปพื้นหลัง
     public void setBackgroundImage() {
         String bgPath = System.getProperty("user.dir")
                 + File.separator + "photo" + File.separator + "bk.png";
         background = new ImageIcon(bgPath).getImage();
+    }
+
+    // โหลด "หลายรูป" ของอุกกาบาตไว้ในคลัง (ปรับชื่อไฟล์ตามที่มีจริงในโฟลเดอร์ image/)
+    private void loadMeteorSprites() {
+        String base = System.getProperty("user.dir") + File.separator + "image" + File.separator;
+
+        // >>> ปรับรายชื่อไฟล์ตามโปรเจกต์ของคุณ <<<
+        String[] names = {
+                "1.png",
+                "2.png",
+                "3.png",
+                "4.png"
+        };
+
+        meteorSprites = new Image[names.length];
+        for (int i = 0; i < names.length; i++) {
+            meteorSprites[i] = new ImageIcon(base + names[i]).getImage();
+        }
     }
 
     // สร้างอุกกาบาต
@@ -55,31 +77,35 @@ public class Inprogram extends JPanel implements Runnable {
         speedY    = new float[count];
         exploding = new boolean[count];
 
-        // ไฟล์อุกกาบาต (ปรับชื่อให้ตรงกับไฟล์จริงในโฟลเดอร์ photo/)
-        String meteorPath = System.getProperty("user.dir")
-                + File.separator + "photo" + File.separator + "photo2.png";
+        // ถ้ายังไม่มีคลังรูป ให้โหลด
+        if (meteorSprites == null || meteorSprites.length == 0) {
+            loadMeteorSprites();
+        }
 
         for (int i = 0; i < count; i++) {
             exploding[i] = false;
-            meteor[i] = new ImageIcon(meteorPath).getImage();
+
+            // สุ่มเลือกรูปจากคลังหลายไฟล์
+            meteor[i] = meteorSprites[rng.nextInt(meteorSprites.length)];
 
             // ตำแหน่งสุ่ม
-            meteorX[i] = rng.nextInt(Vitality.window_Width - Vitality.meteorSize);
-            meteorY[i] = rng.nextInt(Vitality.window_Height - Vitality.meteorSize);
+            meteorX[i] = rng.nextInt(Math.max(1, Vitality.window_Width  - Vitality.meteorSize));
+            meteorY[i] = rng.nextInt(Math.max(1, Vitality.window_Height - Vitality.meteorSize));
 
-            // ความเร็วสุ่ม (ไม่ต่ำกว่า 0.5)
-            speedX[i] = rng.nextInt(Vitality.speedMeteor * 2 + 1) - Vitality.speedMeteor;
-            speedY[i] = rng.nextInt(Vitality.speedMeteor * 2 + 1) - Vitality.speedMeteor;
-            if (speedX[i] == 0) {
-                speedX[i] = 1;
-            }
-            if (speedY[i] == 0) {
-                speedY[i] = 1;
-            }
-
+            // ความเร็วสุ่ม (กัน 0 และมีค่าต่ำสุดเล็กน้อย)
+            speedX[i] = randSpeed(Vitality.speedMeteor);
+            speedY[i] = randSpeed(Vitality.speedMeteor);
         }
         updateMeteorCount();
         repaint();
+    }
+
+    private float randSpeed(int maxAbs) {
+        // สุ่มช่วง [-maxAbs, maxAbs] แล้วบังคับไม่เป็นศูนย์และมีค่าต่ำสุด 0.5
+        int v = rng.nextInt(maxAbs * 2 + 1) - maxAbs;
+        if (v == 0) v = (rng.nextBoolean() ? 1 : -1);
+        float mag = Math.max(0.5f, Math.abs(v));
+        return v < 0 ? -mag : mag;
     }
 
     public void stop() { alive = false; }
@@ -107,11 +133,13 @@ public class Inprogram extends JPanel implements Runnable {
 
     /* -------------------- เอฟเฟกต์ระเบิด -------------------- */
     private void explode(int index) {
+        if (index < 0 || index >= count || meteor[index] == null || exploding[index]) return;
 
+        exploding[index] = true; // ตั้งสถานะก่อน
 
-        // โหลดไฟล์ gif ระเบิด
+        // โหลดไฟล์ gif ระเบิด (ตรวจชื่อไฟล์จริงในโฟลเดอร์ photo/)
         String expPath = System.getProperty("user.dir")
-                + File.separator + "photo" + File.separator + "gitB.gif";
+                + File.separator + "photo" + File.separator + "gitB.gif"; // ถ้าไฟล์ชื่ออื่น แก้ตรงนี้
         meteor[index] = new ImageIcon(expPath).getImage();
 
         // หยุดการเคลื่อนที่
@@ -122,10 +150,7 @@ public class Inprogram extends JPanel implements Runnable {
 
         // ผ่านไป 0.3 วิ → ลบออก
         new Thread(() -> {
-            try
-            { Thread.sleep(300); }
-            catch
-            (InterruptedException ignored) {}
+            try { Thread.sleep(300); } catch (InterruptedException ignored) {}
             meteor[index] = null;
             exploding[index] = false;
             updateMeteorCount();
@@ -164,14 +189,10 @@ public class Inprogram extends JPanel implements Runnable {
                     meteorY[i] += Math.round(speedY[i]);
 
                     int W = getWidth();
-                    if (W <= 0) {
-                        W = Vitality.window_Width;
-                    }
+                    if (W <= 0) W = Vitality.window_Width;
 
                     int H = getHeight();
-                    if (H <= 0) {
-                        H = Vitality.window_Height;
-                    }
+                    if (H <= 0) H = Vitality.window_Height;
 
                     // ชนซ้าย/ขวา
                     if (meteorX[i] <= 0) {
@@ -192,44 +213,30 @@ public class Inprogram extends JPanel implements Runnable {
                     }
                 }
 
-                // ตรวจชนกัน
+                // ตรวจชนกัน (ถ้าศูนย์กลางห่างกันน้อยกว่าเส้นผ่านศูนย์กลาง => ระเบิดเร็วสุด)
                 for (int i = 0; i < count; i++) {
-                    if (meteor[i] == null || exploding[i]) {
-                        continue;
-                    }
+                    if (meteor[i] == null || exploding[i]) continue;
                     for (int j = i + 1; j < count; j++) {
-                        if (meteor[j] == null || exploding[j]) {
-                            continue;
-                        }
+                        if (meteor[j] == null || exploding[j]) continue;
 
-                        float ax = meteorX[i] + sz/2f, ay = meteorY[i] + sz/2f;
-                        float bx = meteorX[j] + sz/2f, by = meteorY[j] + sz/2f;
+                        float ax = meteorX[i] + sz / 2f, ay = meteorY[i] + sz / 2f;
+                        float bx = meteorX[j] + sz / 2f, by = meteorY[j] + sz / 2f;
 
                         float dx = ax - bx, dy = ay - by;
-                        float dist2 = dx*dx + dy*dy;
-                        float collide = sz;
+                        float dist2 = dx * dx + dy * dy;
+                        float collide = sz; // ใช้เส้นผ่านศูนย์กลางเป็นเกณฑ์ง่ายๆ
 
-
-                        //ชนละไม่เปลี่ยนทิศทาง
                         if (dist2 < collide * collide) {
                             float sp1 = Math.abs(speedX[i]) + Math.abs(speedY[i]);
                             float sp2 = Math.abs(speedX[j]) + Math.abs(speedY[j]);
-                            if (sp1 < sp2) {
-                                explode(i);
-                            } else {
-                                explode(j);
-                            }
+                            if (sp1 < sp2) explode(i); else explode(j);
                         }
                     }
                 }
             }
 
             repaint();
-            try { Thread.sleep(16); }
-            catch (InterruptedException ignored) {
-
-            }
-
+            try { Thread.sleep(16); } catch (InterruptedException ignored) {}
         }
     }
 }
