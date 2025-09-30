@@ -8,12 +8,12 @@ public class FrameMT extends JFrame {
     public FrameMT(int count) {
         // ตั้งค่าหน้าต่าง
         setTitle("Meteorite");
-        setSize(Vitality.window_Width, Vitality.window_Height);
+        setSize(Vitality.frame_Width, Vitality.frame_Height);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
         // สร้าง label แสดงจำนวน
-        infoLabel = new JLabel("Number of Meteorites : 0");
+        infoLabel = new JLabel("Meteorites : 0");
 //        infoLabel.setForeground(Color.BLUE);
 
         // สร้าง panel เกม
