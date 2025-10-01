@@ -9,11 +9,11 @@ public class Main {
             // ให้ผู้ใช้ใส่จำนวนอุกกาบาต
             String input = JOptionPane.showInputDialog("Meteorite:");
 
-            // ถ้าไม่ได้ใส่อะไร กำหนดค่าเริ่มต้นเป็น 10
+            // ถ้าไม่ได้ใส่อะไร
             int count = 0;
             try {
                 if (input != null && !input.isEmpty()) {
-                    count = Integer.parseInt(input); // แปลงเป็นตัวเลข
+                    count = Integer.parseInt(input);
                 }
             }
             catch (Exception e) {
@@ -22,7 +22,6 @@ public class Main {
             }
 
 
-            // สร้างหน้าต่างเกม
             FrameMT frame = new FrameMT(count);
             frame.setVisible(true);
         });

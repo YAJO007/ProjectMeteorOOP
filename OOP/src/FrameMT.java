@@ -6,17 +6,13 @@ public class FrameMT extends JFrame {
     private Inprogram meteorPanel;
 
     public FrameMT(int count) {
-        // ตั้งค่าหน้าต่าง
         setTitle("Meteorite");
         setSize(Vitality.frame_Width, Vitality.frame_Height);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // สร้าง label แสดงจำนวน
         infoLabel = new JLabel("Meteorites : 0");
-//        infoLabel.setForeground(Color.BLUE);
 
-        // สร้าง panel เกม
         meteorPanel = new Inprogram();
         meteorPanel.setInfoText(infoLabel);
         meteorPanel.setBackgroundImage();
@@ -27,10 +23,10 @@ public class FrameMT extends JFrame {
         add(infoLabel, BorderLayout.NORTH);
         add(meteorPanel, BorderLayout.CENTER);
     }
-
+    //หยุดเธรดเกมก่อน
     @Override
     public void dispose() {
-        meteorPanel.stop(); // หยุด thread ตอนปิด
+        meteorPanel.stop();
         super.dispose();
     }
 }
