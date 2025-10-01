@@ -4,12 +4,9 @@ import java.util.InputMismatchException;
 
 public class Main {
     public static void main(String[] args) {
-        // รันบน Swing Thread
         SwingUtilities.invokeLater(() -> {
-            // ให้ผู้ใช้ใส่จำนวนอุกกาบาต
             String input = JOptionPane.showInputDialog("Meteorite:");
 
-            // ถ้าไม่ได้ใส่อะไร
             int count = 0;
             try {
                 if (input != null && !input.isEmpty()) {
